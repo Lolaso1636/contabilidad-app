@@ -67,42 +67,23 @@ exports.deleteTransaction = async (req, res) => {
 // ===============================
 // EDITAR TRANSACCIÓN
 // ===============================
-exports.updateTransaction = async (req, res) => {
-  const { id } = req.params;
-  const { amount, type, description, date, category_id } = req.body;
 
-  try {
-    await pool.query(
-      `
-      UPDATE transactions
-      SET amount = $1,
-          type = $2,
-          description = $3,
-          date = $4,
-          category_id = $5
-      WHERE id = $6
-      `,
-      [amount, type, description, date, category_id, id]
-    );
-
-    res.json({ message: 'Transacción actualizada' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error al editar transacción' });
-  }
-};
 // ===============================
 // ACTUALIZAR TRANSACCIÓN
 // ===============================
 exports.updateTransaction = async (req, res) => {
   try {
     const { id } = req.params;
-    const { amount, type, description, date, category_id } = req.body;
+    let { amount, type, description, date, category_id } = req.body;
+
+    console.log('UPDATE TRANSACTION BODY:', req.body);
+
+    amount = Number(amount);
+    category_id = Number(category_id);
+    date = new Date(date);
 
     if (!amount || !type || !date || !category_id) {
-      return res.status(400).json({
-        message: 'Datos incompletos'
-      });
+      return res.status(400).json({ message: 'Datos incompletos' });
     }
 
     const result = await pool.query(
@@ -119,17 +100,12 @@ exports.updateTransaction = async (req, res) => {
       [amount, type, description, date, category_id, id]
     );
 
-    if (result.rowCount === 0) {
-      return res.status(404).json({ message: 'Transacción no encontrada' });
-    }
-
     res.json(result.rows[0]);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({
-      message: 'Error actualizando transacción'
-    });
+    console.error('UPDATE ERROR:', error);
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 

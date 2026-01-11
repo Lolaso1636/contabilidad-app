@@ -1,20 +1,37 @@
 function Summary({ summary }) {
-  if (!summary) return <p>Cargando resumen...</p>;
+  if (!summary) return null;
+
+  const cards = [
+    {
+      label: "Ingresos",
+      value: summary.ingresos,
+      color: "text-green-600",
+    },
+    {
+      label: "Egresos",
+      value: summary.egresos,
+      color: "text-red-600",
+    },
+    {
+      label: "Balance",
+      value: summary.balance,
+      color: summary.balance >= 0 ? "text-blue-600" : "text-red-600",
+    },
+  ];
 
   return (
-    <div style={{ display: 'flex', gap: '1rem', marginBottom: '2rem' }}>
-      <div>
-        <h3>Ingresos</h3>
-        <p>${summary.ingresos}</p>
-      </div>
-      <div>
-        <h3>Egresos</h3>
-        <p>${summary.egresos}</p>
-      </div>
-      <div>
-        <h3>Balance</h3>
-        <p>${summary.balance}</p>
-      </div>
+    <div className="grid md:grid-cols-3 gap-6 mb-8">
+      {cards.map((c) => (
+        <div
+          key={c.label}
+          className="bg-white rounded-xl shadow p-6"
+        >
+          <p className="text-sm text-gray-500">{c.label}</p>
+          <p className={`text-2xl font-bold mt-2 ${c.color}`}>
+            ${c.value.toLocaleString()}
+          </p>
+        </div>
+      ))}
     </div>
   );
 }

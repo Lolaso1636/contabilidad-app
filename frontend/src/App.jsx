@@ -1,27 +1,31 @@
-import { useEffect, useState } from 'react';
-const API_URL = "http://localhost:3001/api/summary";
+import { useEffect, useState } from "react";
+
 // Componentes
-import Summary from './components/Summary';
-import TransactionForm from './components/TransactionForm';
-import TransactionsTable from './components/TransactionsTable';
-import CategoryForm from './components/CategoryForm';
-import CategoriesTable from './components/CategoriesTable';
+import Summary from "./components/Summary";
+import TransactionForm from "./components/TransactionForm";
+import TransactionsTable from "./components/TransactionsTable";
+import CategoryForm from "./components/CategoryForm";
+import CategoriesTable from "./components/CategoriesTable";
 import EditTransactionModal from "./components/EditTransactionModal";
-import SummaryChart from './components/SummaryChart';
-import ReportFilters from './components/ReportFilters';
-import CategoryChart from './components/CategoryChart';
-
-
+import SummaryChart from "./components/SummaryChart";
+import ReportFilters from "./components/ReportFilters";
+import CategoryChart from "./components/CategoryChart";
 
 function App() {
+  // ===============================
+  // NAVEGACIÓN
+  // ===============================
+  const [page, setPage] = useState("dashboard");
+
+  // ===============================
+  // ESTADOS
+  // ===============================
   const [summary, setSummary] = useState(null);
   const [transactions, setTransactions] = useState([]);
   const [categories, setCategories] = useState([]);
   const [editingCategory, setEditingCategory] = useState(null);
   const [editingTransaction, setEditingTransaction] = useState(null);
-  const [filterType, setFilterType] = useState("ALL");
 
-  // Reportes (solo cuando el usuario los pide)
   const [monthlySummary, setMonthlySummary] = useState(null);
   const [categorySummary, setCategorySummary] = useState([]);
 
@@ -35,67 +39,60 @@ function App() {
   }, []);
 
   const loadSummary = async () => {
-    const res = await fetch('http://localhost:3001/api/summary');
+    const res = await fetch("http://localhost:3001/api/summary");
     setSummary(await res.json());
   };
 
   const loadTransactions = async () => {
-    const res = await fetch('http://localhost:3001/api/transactions');
+    const res = await fetch("http://localhost:3001/api/transactions");
     setTransactions(await res.json());
   };
 
   const loadCategories = async () => {
-    const res = await fetch('http://localhost:3001/api/categories');
+    const res = await fetch("http://localhost:3001/api/categories");
     setCategories(await res.json());
   };
 
   // ===============================
-  // GENERAR REPORTE (BOTÓN)
+  // REPORTES
   // ===============================
   const generateReport = async (year, month) => {
-  try {
-    // ===== RESUMEN MENSUAL =====
-    const res1 = await fetch(
-      `http://localhost:3001/api/summary/monthly?year=${year}&month=${month}`
-    );
+    try {
+      const res1 = await fetch(
+        `http://localhost:3001/api/summary/monthly?year=${year}&month=${month}`
+      );
+      const monthly = await res1.json();
 
-    const monthly = await res1.json();
+      const ingresos = Number(monthly?.ingresos || 0);
+      const egresos = Number(monthly?.egresos || 0);
 
-    const ingresos = Number(monthly?.ingresos || 0);
-    const egresos = Number(monthly?.egresos || 0);
+      if (ingresos === 0 && egresos === 0) {
+        setMonthlySummary(null);
+      } else {
+        setMonthlySummary({
+          ingresos,
+          egresos,
+          balance: ingresos - egresos,
+        });
+      }
 
-    if (ingresos === 0 && egresos === 0) {
+      const res2 = await fetch(
+        `http://localhost:3001/api/summary/category?year=${year}&month=${month}`
+      );
+      const raw = await res2.json();
+
+      setCategorySummary(
+        raw.map((c) => ({
+          category: c.category ?? c.name,
+          total: Number(c.total ?? 0),
+        }))
+      );
+    } catch (err) {
+      console.error(err);
       setMonthlySummary(null);
-    } else {
-      setMonthlySummary({
-        ingresos,
-        egresos,
-        balance: ingresos - egresos
-      });
+      setCategorySummary([]);
     }
-
-    // ===== CATEGORÍAS =====
-    const res2 = await fetch(
-      `http://localhost:3001/api/summary/category?year=${year}&month=${month}`
-    );
-
-    const rawCategories = await res2.json();
-
-    const normalizedCategories = rawCategories.map(c => ({
-      category: c.category ?? c.name ?? c.categoria,
-      total: Number(c.total ?? c.amount ?? c.suma ?? 0)
-    }));
-
-    setCategorySummary(normalizedCategories);
-
-  } catch (error) {
-    console.error("Error generando reporte", error);
-    setMonthlySummary(null);
-    setCategorySummary([]);
-  }
-};
-
-
+  };
 
   // ===============================
   // CATEGORÍAS
@@ -105,26 +102,26 @@ function App() {
       await fetch(
         `http://localhost:3001/api/categories/${editingCategory.id}`,
         {
-          method: 'PUT',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(category)
+          method: "PUT",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(category),
         }
       );
       setEditingCategory(null);
     } else {
-      await fetch('http://localhost:3001/api/categories', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(category)
+      await fetch("http://localhost:3001/api/categories", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify(category),
       });
     }
     loadCategories();
   };
 
   const deleteCategory = async (id) => {
-    if (!confirm('¿Eliminar categoría?')) return;
+    if (!confirm("¿Eliminar categoría?")) return;
     await fetch(`http://localhost:3001/api/categories/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
     loadCategories();
   };
@@ -133,86 +130,139 @@ function App() {
   // MOVIMIENTOS
   // ===============================
   const deleteTransaction = async (id) => {
-    if (!confirm('¿Eliminar este movimiento?')) return;
+    if (!confirm("¿Eliminar movimiento?")) return;
     await fetch(`http://localhost:3001/api/transactions/${id}`, {
-      method: 'DELETE'
+      method: "DELETE",
     });
     loadTransactions();
     loadSummary();
   };
 
-console.log("categorySummary ===>", categorySummary);
-
-
   // ===============================
-  // RENDER
+  // UI
   // ===============================
   return (
-    <div style={{ padding: '2rem', fontFamily: 'Arial' }}>
-      <h1>📊 Contabilidad</h1>
+    <>
+      {/* LAYOUT PRINCIPAL */}
+      <div className="flex min-h-screen bg-gray-100">
+        {/* SIDEBAR */}
+        <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col">
+          <div className="p-6 border-b border-slate-700">
+            <h2 className="text-2xl font-bold">💰 Contabilidad</h2>
+            <p className="text-sm text-slate-400 mt-1">Control financiero</p>
+          </div>
 
-      {/* Resumen general */}
-      <Summary summary={summary} />
+          <nav className="flex-1 p-4 space-y-2">
+            <button
+              onClick={() => setPage("dashboard")}
+              className={`w-full text-left px-4 py-2 rounded-lg transition ${
+                page === "dashboard"
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-slate-800 text-slate-300"
+              }`}
+            >
+              📊 Dashboard
+            </button>
 
-      {/* Nueva transacción */}
-      <TransactionForm onSaved={() => {
-        loadTransactions();
-        loadSummary();
-      }} />
+            <button
+              onClick={() => setPage("categories")}
+              className={`w-full text-left px-4 py-2 rounded-lg transition ${
+                page === "categories"
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-slate-800 text-slate-300"
+              }`}
+            >
+              📁 Categorías
+            </button>
 
-      {/* Categorías */}
-      <h2>📁 Categorías</h2>
-      <CategoryForm
-        onSave={saveCategory}
-        editingCategory={editingCategory}
-      />
+            <button
+              onClick={() => setPage("reports")}
+              className={`w-full text-left px-4 py-2 rounded-lg transition ${
+                page === "reports"
+                  ? "bg-blue-600 text-white"
+                  : "hover:bg-slate-800 text-slate-300"
+              }`}
+            >
+              📈 Reportes
+            </button>
+          </nav>
+        </aside>
 
-      <CategoriesTable
-        categories={categories}
-        onEdit={setEditingCategory}
-        onDelete={deleteCategory}
-      />
+        {/* CONTENIDO */}
+        <main className="flex-1 p-8 bg-slate-100">
+          {page === "dashboard" && (
+            <>
+              <Summary summary={summary} />
 
-      {/* Movimientos */}
-      <h2>📄 Movimientos</h2>
-      <TransactionsTable
-        transactions={transactions}
-        onDelete={deleteTransaction}
-        onEdit={setEditingTransaction}
-      />
+              <div className="grid md:grid-cols-2 gap-6 mt-6">
+                <TransactionForm
+                  onSaved={() => {
+                    loadTransactions();
+                    loadSummary();
+                  }}
+                />
 
-      {/* Reportes */}
-      <h2>📊 Reportes</h2>
-      <ReportFilters onGenerate={generateReport} />
+                <TransactionsTable
+                  transactions={transactions}
+                  onDelete={deleteTransaction}
+                  onEdit={setEditingTransaction}
+                />
+              </div>
+            </>
+          )}
 
-      
+          {page === "categories" && (
+            <>
+              <h2 className="text-2xl font-bold mb-4">📁 Categorías</h2>
+              <CategoryForm
+                onSave={saveCategory}
+                editingCategory={editingCategory}
+              />
+              <CategoriesTable
+                categories={categories}
+                onEdit={setEditingCategory}
+                onDelete={deleteCategory}
+              />
+            </>
+          )}
 
-      {monthlySummary && (
-        <SummaryChart data={monthlySummary} />
-      )}
+          {page === "reports" && (
+            <>
+              <h2 className="text-2xl font-bold mb-4">📊 Reportes</h2>
+              <ReportFilters onGenerate={generateReport} />
 
-      {categorySummary.length > 0 ? (
-        <CategoryChart data={categorySummary} />
-      ) : (
-        <p style={{ opacity: 0.6 }}>No hay datos para este período</p>
-      )}
+              {monthlySummary && <SummaryChart data={monthlySummary} />}
+              {categorySummary.length > 0 && (
+                <CategoryChart data={categorySummary} />
+              )}
+            </>
+          )}
+        </main>
+      </div>
 
-
-     
-
-
-      {/* Modal edición */}
+      {/* MODAL (FUERA DEL LAYOUT) */}
       {editingTransaction && (
         <EditTransactionModal
           transaction={editingTransaction}
+          categories={categories}
           onClose={() => setEditingTransaction(null)}
-          onSaved={() => {
+          onSave={async (updated) => {
+            await fetch(
+              `http://localhost:3001/api/transactions/${updated.id}`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated),
+              }
+            );
+
+            setEditingTransaction(null);
             loadTransactions();
             loadSummary();
           }}
         />
       )}
-    </div>
+    </>
   );
 }
 
