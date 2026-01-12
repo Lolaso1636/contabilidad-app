@@ -1,24 +1,38 @@
 import { useEffect, useState } from "react";
 
-// Componentes
+import { BrowserRouter, Routes, Route, Link, useLocation } from "react-router-dom";
+
+// COMPONENTES
 import Summary from "./components/Summary";
-import TransactionForm from "./components/TransactionForm";
-import TransactionsTable from "./components/TransactionsTable";
-import CategoryForm from "./components/CategoryForm";
-import CategoriesTable from "./components/CategoriesTable";
-import EditTransactionModal from "./components/EditTransactionModal";
+import TransactionForm from "./components/transactions/TransactionForm";
+import TransactionsTable from "./components/transactions/TransactionsTable";
+import CategoryForm from "./components/categories/CategoryForm";
+import CategoriesTable from "./components/categories/CategoriesTable";
+import EditTransactionModal from "./components/transactions/EditTransactionModal";
 import SummaryChart from "./components/SummaryChart";
 import ReportFilters from "./components/ReportFilters";
-import CategoryChart from "./components/CategoryChart";
+import CategoryChart from "./components/categories/CategoryChart";
+import Sidebar from "./components/Sidebar";
+import EditCategoryModal from "./components/categories/EditCategoryModal";
 
-function App() {
-  // ===============================
-  // NAVEGACIÓN
-  // ===============================
-  const [page, setPage] = useState("dashboard");
 
+function Layout({ children }) {
+  return (
+    <div className="flex min-h-screen bg-gray-100">
+      {/* AQUÍ SE RENDERIZA EL SIDEBAR */}
+      <Sidebar />
+
+      <main className="flex-1 p-8 bg-slate-100">
+        {children}
+      </main>
+    </div>
+  );
+}
+
+
+function AppContent() {
   // ===============================
-  // ESTADOS
+  // ESTADOS (IGUAL QUE ANTES)
   // ===============================
   const [summary, setSummary] = useState(null);
   const [transactions, setTransactions] = useState([]);
@@ -28,6 +42,9 @@ function App() {
 
   const [monthlySummary, setMonthlySummary] = useState(null);
   const [categorySummary, setCategorySummary] = useState([]);
+
+
+
 
   // ===============================
   // CARGA INICIAL
@@ -58,6 +75,7 @@ function App() {
   // ===============================
   const generateReport = async (year, month) => {
     try {
+      // ===== RESUMEN MENSUAL =====
       const res1 = await fetch(
         `http://localhost:3001/api/summary/monthly?year=${year}&month=${month}`
       );
@@ -76,23 +94,33 @@ function App() {
         });
       }
 
+      // ===== RESUMEN POR CATEGORÍA =====
       const res2 = await fetch(
         `http://localhost:3001/api/summary/category?year=${year}&month=${month}`
       );
-      const raw = await res2.json();
+
+      const raw = await res2.json(); // ✅ CORREGIDO
+
+      if (!Array.isArray(raw)) {
+        console.error("Respuesta inválida de categorías:", raw);
+        setCategorySummary([]);
+        return;
+      }
 
       setCategorySummary(
-        raw.map((c) => ({
-          category: c.category ?? c.name,
-          total: Number(c.total ?? 0),
+        raw.map(r => ({
+          category: r.category ?? r.name ?? "Sin categoría",
+          total: Number(r.total ?? 0),
         }))
       );
-    } catch (err) {
-      console.error(err);
+
+    } catch (error) {
+      console.error("Error generando reporte:", error);
       setMonthlySummary(null);
       setCategorySummary([]);
     }
   };
+
 
   // ===============================
   // CATEGORÍAS
@@ -138,85 +166,46 @@ function App() {
     loadSummary();
   };
 
-  // ===============================
-  // UI
-  // ===============================
+
   return (
     <>
-      {/* LAYOUT PRINCIPAL */}
-      <div className="flex min-h-screen bg-gray-100">
-        {/* SIDEBAR */}
-        <aside className="w-64 bg-slate-900 text-slate-100 flex flex-col">
-          <div className="p-6 border-b border-slate-700">
-            <h2 className="text-2xl font-bold">💰 Contabilidad</h2>
-            <p className="text-sm text-slate-400 mt-1">Control financiero</p>
-          </div>
-
-          <nav className="flex-1 p-4 space-y-2">
-            <button
-              onClick={() => setPage("dashboard")}
-              className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                page === "dashboard"
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-slate-800 text-slate-300"
-              }`}
-            >
-              📊 Dashboard
-            </button>
-
-            <button
-              onClick={() => setPage("categories")}
-              className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                page === "categories"
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-slate-800 text-slate-300"
-              }`}
-            >
-              📁 Categorías
-            </button>
-
-            <button
-              onClick={() => setPage("reports")}
-              className={`w-full text-left px-4 py-2 rounded-lg transition ${
-                page === "reports"
-                  ? "bg-blue-600 text-white"
-                  : "hover:bg-slate-800 text-slate-300"
-              }`}
-            >
-              📈 Reportes
-            </button>
-          </nav>
-        </aside>
-
-        {/* CONTENIDO */}
-        <main className="flex-1 p-8 bg-slate-100">
-          {page === "dashboard" && (
+      <Routes>
+        {/* DASHBOARD */}
+        <Route
+          path="/"
+          element={
             <>
-              <Summary summary={summary} />
+              {summary && <Summary summary={summary} />}
 
-              <div className="grid md:grid-cols-2 gap-6 mt-6">
-                <TransactionForm
-                  onSaved={() => {
-                    loadTransactions();
-                    loadSummary();
-                  }}
-                />
-
-                <TransactionsTable
-                  transactions={transactions}
-                  onDelete={deleteTransaction}
-                  onEdit={setEditingTransaction}
-                />
-              </div>
+              <TransactionsTable
+                transactions={transactions}
+                onDelete={deleteTransaction}
+                onEdit={setEditingTransaction}
+              />
             </>
-          )}
+          }
+        />
 
-          {page === "categories" && (
+        {/* NUEVA TRANSACCIÓN */}
+        <Route
+          path="/transactions/new"
+          element={
+            <TransactionForm
+              onSaved={() => {
+                loadTransactions();
+                loadSummary();
+              }}
+            />
+          }
+        />
+
+        {/* CATEGORÍAS */}
+        <Route
+          path="/categories"
+          element={
             <>
-              <h2 className="text-2xl font-bold mb-4">📁 Categorías</h2>
               <CategoryForm
                 onSave={saveCategory}
-                editingCategory={editingCategory}
               />
               <CategoriesTable
                 categories={categories}
@@ -224,23 +213,25 @@ function App() {
                 onDelete={deleteCategory}
               />
             </>
-          )}
+          }
+        />
 
-          {page === "reports" && (
+        {/* REPORTES */}
+        <Route
+          path="/reports"
+          element={
             <>
-              <h2 className="text-2xl font-bold mb-4">📊 Reportes</h2>
               <ReportFilters onGenerate={generateReport} />
-
               {monthlySummary && <SummaryChart data={monthlySummary} />}
               {categorySummary.length > 0 && (
                 <CategoryChart data={categorySummary} />
               )}
             </>
-          )}
-        </main>
-      </div>
+          }
+        />
+      </Routes>
 
-      {/* MODAL (FUERA DEL LAYOUT) */}
+      {/* MODAL */}
       {editingTransaction && (
         <EditTransactionModal
           transaction={editingTransaction}
@@ -262,8 +253,37 @@ function App() {
           }}
         />
       )}
+
+      {editingCategory && (
+        <EditCategoryModal
+          category={editingCategory}
+          onClose={() => setEditingCategory(null)}
+          onSave={async (updated) => {
+            await fetch(
+              `http://localhost:3001/api/categories/${updated.id}`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated),
+              }
+            );
+
+            setEditingCategory(null);
+            loadCategories();
+          }}
+        />
+      )}
+
     </>
   );
 }
 
-export default App;
+export default function App() {
+  return (
+    <BrowserRouter>
+      <Layout>
+        <AppContent />
+      </Layout>
+    </BrowserRouter>
+  );
+}

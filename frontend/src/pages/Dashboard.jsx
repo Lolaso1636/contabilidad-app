@@ -1,38 +1,32 @@
-import Summary from "../components/Summary";
-import TransactionForm from "../components/TransactionForm";
+import { Link } from "react-router-dom";
+import TransactionsTable from "../components/transactions/TransactionsTable";
 
 function Dashboard() {
   return (
-    <>
-      <h1>📊 Dashboard</h1>
+    <div className="p-6">
+      <h1 className="text-2xl font-bold mb-6">📊 Dashboard</h1>
 
-      <div
-        style={{
-          display: "grid",
-          gridTemplateColumns: "2fr 1fr",
-          gap: "2rem"
-        }}
-      >
-        {/* Resumen */}
-        <div style={card}>
-          <Summary />
-        </div>
+      {/* Acciones rápidas */}
+      <div className="flex gap-4 mb-6">
+        <Link
+          to="/transactions/new"
+          className="bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded text-white"
+        >
+          ➕ Nueva transacción
+        </Link>
 
-        {/* Nueva transacción */}
-        <div style={card}>
-          <h3>➕ Nueva transacción</h3>
-          <TransactionForm />
-        </div>
+        <Link
+          to="/transactions"
+          className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-white"
+        >
+          📄 Ver todas
+        </Link>
       </div>
-    </>
+
+      {/* Últimos movimientos */}
+      <TransactionsTable limit={5} />
+    </div>
   );
 }
-
-const card = {
-  background: "white",
-  padding: "1.5rem",
-  borderRadius: "8px",
-  boxShadow: "0 2px 6px rgba(0,0,0,0.1)"
-};
 
 export default Dashboard;
