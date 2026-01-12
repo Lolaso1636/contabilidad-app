@@ -5,12 +5,16 @@ const {
   getCategories,
   createCategory,
   updateCategory,
-  deleteCategory
+  deleteCategory,
+  getCategoriesTree
 } = require('../controllers/categories.controller');
 
 router.get('/', getCategories);
 router.post('/', createCategory);
 router.put('/:id', updateCategory);
 router.delete('/:id', deleteCategory);
+router.get('/tree', getCategoriesTree);
+
+
 
 module.exports = router;

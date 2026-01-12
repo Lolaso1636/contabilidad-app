@@ -1,25 +1,76 @@
 import { useState } from "react";
 import { createPortal } from "react-dom";
 
-function EditCategoryModal({ category, onClose, onSave }) {
+/* ===============================
+   🔧 HELPERS (VAN AQUÍ)
+   =============================== */
+
+// Aplana el árbol de categorías
+function flattenCategories(categories = []) {
+  let result = [];
+
+  function traverse(nodes) {
+    nodes.forEach(node => {
+      result.push(node);
+      if (node.children?.length) {
+        traverse(node.children);
+      }
+    });
+  }
+
+  traverse(categories);
+  return result;
+}
+
+// Obtiene IDs de todos los hijos y nietos
+function getDescendantIds(category) {
+  let ids = [];
+
+  function traverse(node) {
+    node.children?.forEach(child => {
+      ids.push(child.id);
+      traverse(child);
+    });
+  }
+
+  traverse(category);
+  return ids;
+}
+
+/* ===============================
+   🧩 COMPONENTE
+   =============================== */
+
+function EditCategoryModal({ category, categories = [], onClose, onSave }) {
   if (!category) return null;
 
   const [form, setForm] = useState({
     id: category.id,
     name: category.name,
     type: category.type,
+    parent_id: category.parent_id ?? "",
   });
+
+  const descendantIds = getDescendantIds(category);
+
+  const parentOptions = flattenCategories(categories).filter(c =>
+    c.id !== category.id &&            // no sí misma
+    !descendantIds.includes(c.id)     // no hijos ni nietos
+  );
 
   const handleChange = (e) => {
     setForm({
       ...form,
-      [e.target.name]: e.target.value,
+      [e.target.name]: e.target.value || "",
     });
   };
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    onSave(form);
+    onSave({
+      ...form,
+      parent_id: form.parent_id ? Number(form.parent_id) : null,
+    });
   };
 
   return createPortal(
@@ -33,59 +84,52 @@ function EditCategoryModal({ category, onClose, onSave }) {
                    from-slate-900 to-slate-800 p-6 shadow-2xl border border-slate-700"
         onClick={(e) => e.stopPropagation()}
       >
-        <h3 className="text-xl font-semibold mb-5 flex items-center gap-2">
-          ✏️ <span>Editar categoría</span>
-        </h3>
+        <h3 className="text-xl font-semibold mb-5">✏️ Editar categoría</h3>
 
         <form onSubmit={handleSubmit} className="space-y-4">
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">
-              Nombre
-            </label>
-            <input
-              name="name"
-              value={form.name}
-              onChange={handleChange}
-              className="w-full rounded-lg bg-slate-900 border border-slate-700
-                         px-3 py-2 focus:outline-none focus:ring-2
-                         focus:ring-blue-500"
-              required
-            />
-          </div>
+          {/* Nombre */}
+          <input
+            name="name"
+            value={form.name}
+            onChange={handleChange}
+            className="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded"
+            required
+          />
 
-          <div>
-            <label className="block text-sm text-slate-400 mb-1">
-              Tipo
-            </label>
-            <select
-              name="type"
-              value={form.type}
-              onChange={handleChange}
-              className="w-full rounded-lg bg-slate-900 border border-slate-700
-                         px-3 py-2 focus:outline-none focus:ring-2
-                         focus:ring-blue-500"
-            >
-              <option value="INGRESO">Ingreso</option>
-              <option value="EGRESO">Egreso</option>
-              <option value="MIXTA">Mixta</option>
-            </select>
-          </div>
+          {/* Tipo */}
+          <select
+            name="type"
+            value={form.type}
+            onChange={handleChange}
+            className="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded"
+          >
+            <option value="INGRESO">Ingreso</option>
+            <option value="EGRESO">Egreso</option>
+            <option value="MIXTA">Mixta</option>
+          </select>
 
+          {/* Categoría padre */}
+          <select
+            name="parent_id"
+            value={form.parent_id}
+            onChange={handleChange}
+            className="w-full bg-slate-900 border border-slate-700 px-3 py-2 rounded"
+          >
+            <option value="">— Categoría principal —</option>
+
+            {parentOptions.map(c => (
+              <option key={c.id} value={c.id}>
+                {c.name}
+              </option>
+            ))}
+          </select>
+
+          {/* Botones */}
           <div className="flex justify-end gap-3 pt-4">
-            <button
-              type="button"
-              onClick={onClose}
-              className="rounded-lg px-4 py-2 text-sm
-                         bg-slate-700 hover:bg-slate-600 transition"
-            >
+            <button type="button" onClick={onClose}>
               Cancelar
             </button>
-
-            <button
-              type="submit"
-              className="rounded-lg px-4 py-2 text-sm font-medium
-                         bg-blue-600 hover:bg-blue-500 transition"
-            >
+            <button type="submit" className="bg-blue-600 px-4 py-2 rounded">
               Guardar cambios
             </button>
           </div>

@@ -14,6 +14,7 @@ import ReportFilters from "./components/ReportFilters";
 import CategoryChart from "./components/categories/CategoryChart";
 import Sidebar from "./components/Sidebar";
 import EditCategoryModal from "./components/categories/EditCategoryModal";
+import CategoriesTree from "./components/categories/CategoriesTable";
 
 
 function Layout({ children }) {
@@ -42,6 +43,8 @@ function AppContent() {
 
   const [monthlySummary, setMonthlySummary] = useState(null);
   const [categorySummary, setCategorySummary] = useState([]);
+  const [categoryTree, setCategoryTree] = useState([]);
+
 
 
 
@@ -53,6 +56,7 @@ function AppContent() {
     loadSummary();
     loadTransactions();
     loadCategories();
+    loadCategoryTree();
   }, []);
 
   const loadSummary = async () => {
@@ -69,6 +73,25 @@ function AppContent() {
     const res = await fetch("http://localhost:3001/api/categories");
     setCategories(await res.json());
   };
+
+  const loadCategoryTree = async () => {
+    try {
+      const res = await fetch("http://localhost:3001/api/categories/tree");
+
+      if (!res.ok) {
+        throw new Error("Error cargando category tree");
+      }
+
+      const data = await res.json();
+      console.log("CATEGORY TREE CARGADO:", data);
+      setCategoryTree(data);
+    } catch (err) {
+      console.error(err);
+      setCategoryTree([]);
+    }
+  };
+
+
 
   // ===============================
   // REPORTES
@@ -121,6 +144,7 @@ function AppContent() {
     }
   };
 
+  
 
   // ===============================
   // CATEGORÍAS
@@ -144,6 +168,7 @@ function AppContent() {
       });
     }
     loadCategories();
+    loadCategoryTree();
   };
 
   const deleteCategory = async (id) => {
@@ -205,9 +230,10 @@ function AppContent() {
           element={
             <>
               <CategoryForm
+                categoryTree={categoryTree}   // ✅ AHORA SÍ
                 onSave={saveCategory}
               />
-              <CategoriesTable
+              <CategoriesTree
                 categories={categories}
                 onEdit={setEditingCategory}
                 onDelete={deleteCategory}
@@ -257,6 +283,7 @@ function AppContent() {
       {editingCategory && (
         <EditCategoryModal
           category={editingCategory}
+          categories={categories}
           onClose={() => setEditingCategory(null)}
           onSave={async (updated) => {
             await fetch(
