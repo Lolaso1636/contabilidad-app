@@ -14,7 +14,7 @@ function EditTransactionModal({
     id: transaction.id,
     amount: transaction.amount,
     type: transaction.type,
-    category: transaction.category,
+    category_id: transaction.category_id,
     description: transaction.description,
     date: transaction.date?.slice(0, 10),
   });
@@ -106,8 +106,8 @@ function EditTransactionModal({
               Categoría
             </label>
             <select
-              name="category"
-              value={form.category}
+              name="category_id"
+              value={form.category_id}
               onChange={handleChange}
               className="w-full rounded-lg bg-slate-900 border border-slate-700
                          px-3 py-2 focus:outline-none focus:ring-2

@@ -15,6 +15,10 @@ import CategoryChart from "./components/categories/CategoryChart";
 import Sidebar from "./components/Sidebar";
 import EditCategoryModal from "./components/categories/EditCategoryModal";
 import CategoriesTree from "./components/categories/CategoriesTable";
+import { getAccounts } from "./api/accounts";
+import AccountsSummary from "./components/accounts/AccountsSummary";
+
+
 
 
 function Layout({ children }) {
@@ -45,6 +49,10 @@ function AppContent() {
   const [categorySummary, setCategorySummary] = useState([]);
   const [categoryTree, setCategoryTree] = useState([]);
 
+  // NUEVO ESTADO PARA CUENTAS
+  const [accounts, setAccounts] = useState([]);
+
+
 
 
 
@@ -57,6 +65,8 @@ function AppContent() {
     loadTransactions();
     loadCategories();
     loadCategoryTree();
+    loadAccounts();
+    fetchAccounts();  
   }, []);
 
   const loadSummary = async () => {
@@ -90,6 +100,16 @@ function AppContent() {
       setCategoryTree([]);
     }
   };
+
+  // NUEVA FUNCIÓN PARA CARGAR CUENTAS
+  const loadAccounts = async () => {
+  try {
+    const data = await getAccounts();
+    setAccounts(data);
+  } catch (error) {
+    console.error("Error cargando cuentas:", error);
+  }
+};
 
 
 
@@ -191,6 +211,15 @@ function AppContent() {
     loadSummary();
   };
 
+// NUEVA FUNCIÓN PARA CARGAR CUENTAS
+  const fetchAccounts = async () => {
+    const res = await fetch("http://localhost:3001/api/accounts");
+    const data = await res.json();
+    setAccounts(data);
+  };
+
+
+
 
   return (
     <>
@@ -200,8 +229,13 @@ function AppContent() {
           path="/"
           element={
             <>
+               {/* CUENTAS */}
+              <AccountsSummary accounts={accounts} />
+
+              {/* RESUMEN GENERAL */}
               {summary && <Summary summary={summary} />}
 
+              {/* TABLA DE MOVIMIENTOS */}
               <TransactionsTable
                 transactions={transactions}
                 onDelete={deleteTransaction}
@@ -219,6 +253,7 @@ function AppContent() {
               onSaved={() => {
                 loadTransactions();
                 loadSummary();
+                fetchAccounts();  
               }}
             />
           }
