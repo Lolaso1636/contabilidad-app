@@ -29,6 +29,19 @@ exports.createTransaction = async (req, res) => {
       return res.status(400).json({ message: "Tipo inválido" });
     }
 
+    if (type === "INGRESO" && !to_account_id) {
+      return res.status(400).json({ message: "Cuenta destino requerida para ingresos" });
+    }
+
+    if (type === "EGRESO" && !from_account_id) {
+      return res.status(400).json({ message: "Cuenta origen requerida para egresos" });
+    }
+
+    if (type === "TRANSFERENCIA" && (!from_account_id || !to_account_id)) {
+      return res.status(400).json({ message: "Cuentas origen y destino requeridas para transferencias" });
+    }
+
+
     await client.query("BEGIN");
 
     // VALIDAR SALDO
@@ -229,7 +242,7 @@ exports.updateTransaction = async (req, res) => {
       to_account_id
     } = req.body;
 
-    
+    const normalizedType = type.toUpperCase();
 
     await client.query('BEGIN');
 

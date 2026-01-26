@@ -5,6 +5,7 @@ import {
   Folder,
   ChartColumnStacked,
   BadgeDollarSign,
+  Wallet, 
 } from "lucide-react";
 
 
@@ -35,7 +36,9 @@ function Sidebar() {
       {item("/", "Dashboard", LayoutDashboard)}
       {item("/transactions/new", "Nueva transacción", CirclePlus)}
       {item("/categories", "Categorías", Folder)}
+      {item("/accounts", "Cuentas", Wallet)} {/* 👈 NUEVO */}
       {item("/reports", "Reportes", ChartColumnStacked)}
+
     </aside>
   );
 }

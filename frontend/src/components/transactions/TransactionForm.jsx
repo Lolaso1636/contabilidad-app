@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
-function TransactionForm({ onSaved }) {
+
+function TransactionForm({ onSaved, accounts = [], categories = [] }) {
   const [form, setForm] = useState({
     amount: "",
     type: "EGRESO",
@@ -9,32 +10,39 @@ function TransactionForm({ onSaved }) {
     category_id: "",
   });
 
-  const [accounts, setAccounts] = useState([]);
   const [fromAccountId, setFromAccountId] = useState("");
   const [toAccountId, setToAccountId] = useState("");
 
-
-  const [categories, setCategories] = useState([]);
-
-  useEffect(() => {
-    fetch("http://localhost:3001/api/categories")
-      .then((res) => res.json())
-      .then(setCategories);
-  }, []);
-
-  useEffect(() => {
-  fetch("http://localhost:3001/api/accounts")
-    .then((res) => res.json())
-    .then(setAccounts);
-}, []);
-
-
   const handleChange = (e) => {
-    setForm({ ...form, [e.target.name]: e.target.value });
+    const { name, value } = e.target;
+
+    // Resetear categoría si cambia el tipo
+    if (name === "type") {
+      setForm({ ...form, type: value, category_id: "" });
+      return;
+    }
+
+    setForm({ ...form, [name]: value });
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
+
+    // Validaciones frontend
+    if (form.type === "INGRESO" && !toAccountId) {
+      alert("Seleccione una cuenta destino");
+      return;
+    }
+
+    if (form.type === "EGRESO" && !fromAccountId) {
+      alert("Seleccione una cuenta origen");
+      return;
+    }
+
+    if (form.type === "TRANSFERENCIA" && (!fromAccountId || !toAccountId)) {
+      alert("Seleccione cuenta origen y destino");
+      return;
+    }
 
     const payload = {
       ...form,
@@ -77,11 +85,12 @@ function TransactionForm({ onSaved }) {
     onSaved();
   };
 
-
   return (
     <div className="bg-gray-900 text-slate-200 p-6 rounded-xl mb-6">
       <h2 className="text-xl font-semibold mb-4">
-        <MessageSquarePlus className="w-5 h-5 inline mr-" /> Nueva transacción</h2>
+        <MessageSquarePlus className="w-5 h-5 inline mr-2" />
+        Nueva transacción
+      </h2>
 
       <form
         onSubmit={handleSubmit}
@@ -107,7 +116,6 @@ function TransactionForm({ onSaved }) {
           <option value="EGRESO">Egreso</option>
           <option value="TRANSFERENCIA">Transferencia</option>
         </select>
-
 
         <input
           name="description"
@@ -143,41 +151,45 @@ function TransactionForm({ onSaved }) {
                 </option>
               ))}
           </select>
-          )}
+        )}
 
+        {(form.type === "EGRESO" || form.type === "TRANSFERENCIA") && (
+          <select
+            value={fromAccountId}
+            onChange={(e) => setFromAccountId(e.target.value)}
+            required
+            className="bg-gray-800 text-slate-200 px-3 py-2 rounded focus:outline-none"
+          >
+            <option value="">Cuenta origen</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.type === "BANK" && "💳 "}
+                {acc.type === "CASH" && "💵 "}
+                {acc.type === "WALLET" && "📱 "}
+                {acc.name}
+              </option>
+            ))}
+          </select>
+        )}
 
-      {(form.type === "EGRESO" || form.type === "TRANSFERENCIA") && (
-        <select
-          value={fromAccountId}
-          onChange={(e) => setFromAccountId(e.target.value)}
-          required
-          className="bg-gray-800 text-slate-200 px-3 py-2 rounded focus:outline-none"
-        >
-          <option value="">Cuenta origen</option>
-          {accounts.map((acc) => (
-            <option key={acc.id} value={acc.id}>
-              {acc.name}
-            </option>
-          ))}
-        </select>
-      )}
-
-      {(form.type === "INGRESO" || form.type === "TRANSFERENCIA") && (
-        <select
-          value={toAccountId}
-          onChange={(e) => setToAccountId(e.target.value)}
-          required
-          className="bg-gray-800 text-slate-200 px-3 py-2 rounded focus:outline-none"
-        >
-          <option value="">Cuenta destino</option>
-          {accounts.map((acc) => (
-            <option key={acc.id} value={acc.id}>
-              {acc.name}
-            </option>
-          ))}
-        </select>
-      )}
-
+        {(form.type === "INGRESO" || form.type === "TRANSFERENCIA") && (
+          <select
+            value={toAccountId}
+            onChange={(e) => setToAccountId(e.target.value)}
+            required
+            className="bg-gray-800 text-slate-200 px-3 py-2 rounded focus:outline-none"
+          >
+            <option value="">Cuenta destino</option>
+            {accounts.map((acc) => (
+              <option key={acc.id} value={acc.id}>
+                {acc.type === "BANK" && "💳 "}
+                {acc.type === "CASH" && "💵 "}
+                {acc.type === "WALLET" && "📱 "}
+                {acc.name}
+              </option>
+            ))}
+          </select>
+        )}
 
         <button
           type="submit"

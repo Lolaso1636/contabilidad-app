@@ -17,6 +17,12 @@ import EditCategoryModal from "./components/categories/EditCategoryModal";
 import CategoriesTree from "./components/categories/CategoriesTable";
 import { getAccounts } from "./api/accounts";
 import AccountsSummary from "./components/accounts/AccountsSummary";
+import Accounts from "./pages/Accounts";
+import EditAccountModal from "./components/accounts/EditAccountModal";
+
+
+
+
 
 
 
@@ -51,12 +57,10 @@ function AppContent() {
 
   // NUEVO ESTADO PARA CUENTAS
   const [accounts, setAccounts] = useState([]);
+  const [editingAccount, setEditingAccount] = useState(null);
 
 
-
-
-
-
+  
   // ===============================
   // CARGA INICIAL
   // ===============================
@@ -250,6 +254,8 @@ function AppContent() {
           path="/transactions/new"
           element={
             <TransactionForm
+              accounts={accounts}
+              categories={categories}
               onSaved={() => {
                 loadTransactions();
                 loadSummary();
@@ -290,7 +296,24 @@ function AppContent() {
             </>
           }
         />
+        
+        {/* ✅ CUENTAS */}
+              <Route
+        path="/accounts"
+        element={
+          <Accounts
+            accounts={accounts}
+            onEdit={setEditingAccount}
+            onRefresh={fetchAccounts}
+          />
+        }
+      />
       </Routes>
+
+       
+      
+
+      
 
       {/* MODAL */}
       {editingTransaction && (
@@ -335,6 +358,28 @@ function AppContent() {
           }}
         />
       )}
+
+      {editingAccount && (
+        <EditAccountModal
+          account={editingAccount}
+          onClose={() => setEditingAccount(null)}
+          onSave={async (updated) => {
+            await fetch(
+              `http://localhost:3001/api/accounts/${updated.id}`,
+              {
+                method: "PUT",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify(updated),
+              }
+            );
+
+            setEditingAccount(null);
+            fetchAccounts();   // refresca cuentas
+            loadSummary();     // refresca dashboard
+          }}
+        />
+      )}
+
 
     </>
   );
