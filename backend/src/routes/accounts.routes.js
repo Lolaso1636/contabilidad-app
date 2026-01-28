@@ -7,6 +7,12 @@ const {
   deleteAccount
 } = require('../controllers/accounts.controller');
 
+
+const authMiddleware = require('../middlewares/auth.middleware');
+
+// 🔐 Todo lo que esté abajo requiere login
+router.use(authMiddleware);
+
 router.get('/', getAccounts);
 router.post('/', createAccount);
 router.put('/:id', updateAccount);

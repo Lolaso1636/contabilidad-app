@@ -1,12 +1,13 @@
 import { useEffect, useState } from "react";
 import AccountForm from "../components/AccountForm";
+import { fetchWithAuth } from "./api/fetchWithAuth";
 
 function Accounts() {
   const [accounts, setAccounts] = useState([]);
   const [editingAccount, setEditingAccount] = useState(null);
 
   const fetchAccounts = async () => {
-    const res = await fetch("http://localhost:3001/api/accounts");
+    const res = await fetchWithAuth("/accounts");
     const data = await res.json();
     setAccounts(data);
   };
@@ -18,14 +19,14 @@ function Accounts() {
   const handleSave = async (account) => {
     if (account.id) {
       // EDITAR
-      await fetch(`http://localhost:3001/api/accounts/${account.id}`, {
+      await fetchWithAuth(`/accounts/${account.id}`, {
         method: "PUT",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(account),
       });
     } else {
       // CREAR
-      await fetch("http://localhost:3001/api/accounts", {
+      await fetchWithAuth("/accounts", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(account),

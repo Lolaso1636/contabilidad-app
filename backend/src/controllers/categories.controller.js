@@ -5,9 +5,13 @@ const pool = require('../database/db');
 // ===============================
 exports.getCategories = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     const result = await pool.query(
-      'SELECT * FROM categories ORDER BY name'
+      'SELECT * FROM categories WHERE user_id = $1 ORDER BY name',
+      [userId]
     );
+
     res.json(result.rows);
   } catch (error) {
     console.error(error);
@@ -15,25 +19,26 @@ exports.getCategories = async (req, res) => {
   }
 };
 
+
 // ===============================
 // CREAR CATEGORÍA
 // ===============================
 exports.createCategory = async (req, res) => {
   try {
+    const userId = req.user.id;
     let { name, type, parent_id } = req.body;
 
     if (!name) {
       return res.status(400).json({ message: 'Nombre requerido' });
     }
 
-    // Normalizar parent_id
     parent_id = parent_id ? Number(parent_id) : null;
 
     // ===== SUBCATEGORÍA =====
     if (parent_id !== null) {
       const parent = await pool.query(
-        'SELECT * FROM categories WHERE id = $1',
-        [parent_id]
+        'SELECT * FROM categories WHERE id = $1 AND user_id = $2',
+        [parent_id, userId]
       );
 
       if (parent.rowCount === 0) {
@@ -41,9 +46,10 @@ exports.createCategory = async (req, res) => {
       }
 
       const result = await pool.query(
-        `INSERT INTO categories (name, type, parent_id)
-         VALUES ($1, $2, $3) RETURNING *`,
-        [name, parent.rows[0].type, parent_id]
+        `INSERT INTO categories (name, type, parent_id, user_id)
+         VALUES ($1, $2, $3, $4)
+         RETURNING *`,
+        [name, parent.rows[0].type, parent_id, userId]
       );
 
       return res.status(201).json(result.rows[0]);
@@ -57,18 +63,20 @@ exports.createCategory = async (req, res) => {
     }
 
     const result = await pool.query(
-      `INSERT INTO categories (name, type, parent_id)
-         VALUES ($1, $2, $3) RETURNING *`,
-      [name, type, null]
+      `INSERT INTO categories (name, type, parent_id, user_id)
+       VALUES ($1, $2, NULL, $3)
+       RETURNING *`,
+      [name, type, userId]
     );
 
     res.status(201).json(result.rows[0]);
 
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error creando categoría' });
+    console.error("ERROR CREANDO CATEGORÍA:", error);
+    res.status(500).json({ message: error.message });
   }
 };
+
 
 
 
@@ -80,6 +88,7 @@ exports.createCategory = async (req, res) => {
   exports.updateCategory = async (req, res) => {
     try {
       const { id } = req.params;
+      const userId = req.user.id;
       let { name, type, parent_id } = req.body;
 
       parent_id = parent_id ? Number(parent_id) : null;
@@ -88,14 +97,19 @@ exports.createCategory = async (req, res) => {
         return res.status(400).json({ message: 'Nombre y tipo requeridos' });
       }
 
-      await pool.query(
+      const result = await pool.query(
         `UPDATE categories 
         SET name = $1, type = $2, parent_id = $3 
-        WHERE id = $4`,
-        [name, type, parent_id, id]
+        WHERE id = $4 AND user_id = $5
+        RETURNING *`,
+        [name, type, parent_id, id, userId]
       );
 
-      res.json({ message: 'Categoría actualizada' });
+      if (!result.rowCount) {
+        return res.status(404).json({ message: 'Categoría no encontrada' });
+      }
+
+      res.json(result.rows[0]);
     } catch (error) {
       console.error(error);
       res.status(500).json({ message: 'Error actualizando categoría' });
@@ -103,36 +117,44 @@ exports.createCategory = async (req, res) => {
   };
 
 
+
 // ===============================
 // ELIMINAR CATEGORÍA
 // ===============================
-exports.deleteCategory = async (req, res) => {
-  try {
-    const { id } = req.params;
+  exports.deleteCategory = async (req, res) => {
+    try {
+      const { id } = req.params;
+      const userId = req.user.id;
 
-    await pool.query(
-      'DELETE FROM categories WHERE id = $1',
-      [id]
-    );
+      const result = await pool.query(
+        'DELETE FROM categories WHERE id = $1 AND user_id = $2',
+        [id, userId]
+      );
 
-    res.json({ message: 'Categoría eliminada' });
-  } catch (error) {
-    console.error(error);
-    res.status(500).json({ message: 'Error eliminando categoría' });
+      if (!result.rowCount) {
+        return res.status(404).json({ message: 'Categoría no encontrada' });
+      }
+
+      res.json({ message: 'Categoría eliminada' });
+    } catch (error) {
+      console.error(error);
+      res.status(500).json({ message: 'Error eliminando categoría' });
+    }
   }
-};
 
 // ===============================
 // OBTENER ÁRBOL DE CATEGORÍAS
 // ===============================
 exports.getCategoriesTree = async (req, res) => {
   try {
+    const userId = req.user.id;
+
     const result = await pool.query(
-      'SELECT * FROM categories ORDER BY name'
+      'SELECT * FROM categories WHERE user_id = $1 ORDER BY name',
+      [userId]
     );
 
     const categories = result.rows;
-
     const map = {};
     const tree = [];
 
@@ -154,6 +176,7 @@ exports.getCategoriesTree = async (req, res) => {
     res.status(500).json({ message: 'Error obteniendo árbol de categorías' });
   }
 };
+
 // ===============================
 // FIN CONTROLADOR CATEGORÍAS
 // ===============================

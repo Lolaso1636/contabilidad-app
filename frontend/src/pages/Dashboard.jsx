@@ -20,7 +20,7 @@ function Dashboard() {
           className="bg-gray-700 hover:bg-gray-600 px-4 py-2 rounded text-white"
         >
           📄 Ver todas
-        </Link>
+        </Link>f
       </div>
 
       {/* Últimos movimientos */}

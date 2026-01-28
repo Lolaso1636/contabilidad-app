@@ -1,5 +1,8 @@
 import { useEffect, useState } from "react";
 import { MessageSquarePlus } from "lucide-react";
+import { fetchWithAuth } from "../../api/fetchWithAuth";
+
+
 
 function TransactionForm({ onSaved, accounts = [], categories = [] }) {
   const [form, setForm] = useState({
@@ -45,8 +48,10 @@ function TransactionForm({ onSaved, accounts = [], categories = [] }) {
     }
 
     const payload = {
-      ...form,
       amount: Number(form.amount),
+      type: form.type,
+      description: form.description,
+      date: form.date,
       category_id: form.category_id ? Number(form.category_id) : null,
       from_account_id: null,
       to_account_id: null,
@@ -65,7 +70,9 @@ function TransactionForm({ onSaved, accounts = [], categories = [] }) {
       payload.to_account_id = Number(toAccountId);
     }
 
-    await fetch("http://localhost:3001/api/transactions", {
+    console.log("PAYLOAD TRANSACTION:", payload);
+
+    await fetchWithAuth("/transactions", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(payload),
@@ -84,6 +91,7 @@ function TransactionForm({ onSaved, accounts = [], categories = [] }) {
 
     onSaved();
   };
+
 
   return (
     <div className="bg-gray-900 text-slate-200 p-6 rounded-xl mb-6">

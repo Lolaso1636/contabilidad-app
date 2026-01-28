@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { fetchWithAuth } from "../services/fetchWithAuth";
 
 function Accounts({ accounts = [], onEdit, onRefresh }) {
   const [form, setForm] = useState({
@@ -14,7 +15,7 @@ function Accounts({ accounts = [], onEdit, onRefresh }) {
   const handleSubmit = async (e) => {
     e.preventDefault();
 
-    await fetch("http://localhost:3001/api/accounts", {
+    await fetchWithAuth("/accounts", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify({
@@ -31,7 +32,7 @@ function Accounts({ accounts = [], onEdit, onRefresh }) {
   const handleDelete = async (id) => {
     if (!confirm("¿Eliminar esta cuenta?")) return;
 
-    await fetch(`http://localhost:3001/api/accounts/${id}`, {
+    await fetchWithAuth(`/accounts/${id}`, {
       method: "DELETE",
     });
 

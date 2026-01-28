@@ -15,10 +15,11 @@ import CategoryChart from "./components/categories/CategoryChart";
 import Sidebar from "./components/Sidebar";
 import EditCategoryModal from "./components/categories/EditCategoryModal";
 import CategoriesTree from "./components/categories/CategoriesTable";
-import { getAccounts } from "./api/accounts";
 import AccountsSummary from "./components/accounts/AccountsSummary";
 import Accounts from "./pages/Accounts";
 import EditAccountModal from "./components/accounts/EditAccountModal";
+import AuthGate from './components/AuthGate';
+import { fetchWithAuth } from "./api/fetchWithAuth";
 
 
 
@@ -69,28 +70,39 @@ function AppContent() {
     loadTransactions();
     loadCategories();
     loadCategoryTree();
-    loadAccounts();
     fetchAccounts();  
   }, []);
 
   const loadSummary = async () => {
-    const res = await fetch("http://localhost:3001/api/summary");
-    setSummary(await res.json());
+    const res = await fetchWithAuth("/summary");
+    const data = await res.json();
+    setSummary(data);
   };
+
 
   const loadTransactions = async () => {
-    const res = await fetch("http://localhost:3001/api/transactions");
-    setTransactions(await res.json());
+    const res = await fetchWithAuth("/transactions");
+
+    if (!res.ok) {
+      console.error("Error cargando transactions");
+      setTransactions([]);
+      return;
+    }
+
+    const data = await res.json();
+    setTransactions(Array.isArray(data) ? data : []);
   };
 
+
   const loadCategories = async () => {
-    const res = await fetch("http://localhost:3001/api/categories");
-    setCategories(await res.json());
+    const res = await fetchWithAuth("/categories");
+    const data = await res.json();
+    setCategories(data);
   };
 
   const loadCategoryTree = async () => {
     try {
-      const res = await fetch("http://localhost:3001/api/categories/tree");
+      const res = await fetchWithAuth("/categories/tree");
 
       if (!res.ok) {
         throw new Error("Error cargando category tree");
@@ -105,15 +117,7 @@ function AppContent() {
     }
   };
 
-  // NUEVA FUNCIÓN PARA CARGAR CUENTAS
-  const loadAccounts = async () => {
-  try {
-    const data = await getAccounts();
-    setAccounts(data);
-  } catch (error) {
-    console.error("Error cargando cuentas:", error);
-  }
-};
+
 
 
 
@@ -123,8 +127,8 @@ function AppContent() {
   const generateReport = async (year, month) => {
     try {
       // ===== RESUMEN MENSUAL =====
-      const res1 = await fetch(
-        `http://localhost:3001/api/summary/monthly?year=${year}&month=${month}`
+      const res1 = await fetchWithAuth(
+        `/summary/monthly?year=${year}&month=${month}`
       );
       const monthly = await res1.json();
 
@@ -142,8 +146,8 @@ function AppContent() {
       }
 
       // ===== RESUMEN POR CATEGORÍA =====
-      const res2 = await fetch(
-        `http://localhost:3001/api/summary/category?year=${year}&month=${month}`
+      const res2 = await fetchWithAuth(
+        `/summary/category?year=${year}&month=${month}`
       );
 
       const raw = await res2.json(); // ✅ CORREGIDO
@@ -175,8 +179,8 @@ function AppContent() {
   // ===============================
   const saveCategory = async (category) => {
     if (editingCategory) {
-      await fetch(
-        `http://localhost:3001/api/categories/${editingCategory.id}`,
+      await fetchWithAuth(
+        `/categories/${editingCategory.id}`,
         {
           method: "PUT",
           headers: { "Content-Type": "application/json" },
@@ -185,7 +189,7 @@ function AppContent() {
       );
       setEditingCategory(null);
     } else {
-      await fetch("http://localhost:3001/api/categories", {
+      await fetchWithAuth("/categories", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(category),
@@ -197,7 +201,7 @@ function AppContent() {
 
   const deleteCategory = async (id) => {
     if (!confirm("¿Eliminar categoría?")) return;
-    await fetch(`http://localhost:3001/api/categories/${id}`, {
+    await fetchWithAuth(`/categories/${id}`, {
       method: "DELETE",
     });
     loadCategories();
@@ -208,7 +212,7 @@ function AppContent() {
   // ===============================
   const deleteTransaction = async (id) => {
     if (!confirm("¿Eliminar movimiento?")) return;
-    await fetch(`http://localhost:3001/api/transactions/${id}`, {
+    await fetchWithAuth(`/transactions/${id}`, {
       method: "DELETE",
     });
     loadTransactions();
@@ -217,7 +221,7 @@ function AppContent() {
 
 // NUEVA FUNCIÓN PARA CARGAR CUENTAS
   const fetchAccounts = async () => {
-    const res = await fetch("http://localhost:3001/api/accounts");
+    const res = await fetchWithAuth("/accounts");
     const data = await res.json();
     setAccounts(data);
   };
@@ -322,8 +326,8 @@ function AppContent() {
           categories={categories}
           onClose={() => setEditingTransaction(null)}
           onSave={async (updated) => {
-            await fetch(
-              `http://localhost:3001/api/transactions/${updated.id}`,
+            await fetchWithAuth(
+              `/transactions/${updated.id}`,
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -344,8 +348,8 @@ function AppContent() {
           categories={categories}
           onClose={() => setEditingCategory(null)}
           onSave={async (updated) => {
-            await fetch(
-              `http://localhost:3001/api/categories/${updated.id}`,
+            await fetchWithAuth(
+              `/categories/${updated.id}`,
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -364,8 +368,8 @@ function AppContent() {
           account={editingAccount}
           onClose={() => setEditingAccount(null)}
           onSave={async (updated) => {
-            await fetch(
-              `http://localhost:3001/api/accounts/${updated.id}`,
+            await fetchWithAuth(
+              `/accounts/${updated.id}`,
               {
                 method: "PUT",
                 headers: { "Content-Type": "application/json" },
@@ -388,9 +392,11 @@ function AppContent() {
 export default function App() {
   return (
     <BrowserRouter>
-      <Layout>
-        <AppContent />
-      </Layout>
+      <AuthGate>
+        <Layout>
+          <AppContent />
+        </Layout>
+      </AuthGate>
     </BrowserRouter>
   );
 }
