@@ -1,4 +1,4 @@
-import { Pencil, Trash2, ScrollText, Search} from "lucide-react";
+import { Pencil, Trash2, ScrollText, Search } from "lucide-react";
 
 function TransactionsTable({ transactions = [], onDelete, onEdit }) {
   return (
@@ -6,18 +6,19 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
       {/* Header */}
       <div className="flex justify-between items-center mb-4">
         <h3 className="text-lg font-semibold">
-          <ScrollText className="w-5 h-5 inline mr-2" /> Movimientos</h3>
+          <ScrollText className="w-5 h-5 inline mr-2" /> Movimientos
+        </h3>
 
-            <div className="relative w-64">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 peer-focus:text-blue-400" />
-              <input
-                type="text"
-                placeholder="Buscar por descripción..."
-                className="w-full bg-gray-800 text-slate-200 placeholder-slate-400
-                          pl-10 pr-3 py-2 rounded text-sm
-                          focus:outline-none focus:ring-2 focus:ring-blue-500"
-              />
-              </div>
+        <div className="relative w-64">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-slate-400 peer-focus:text-blue-400" />
+          <input
+            type="text"
+            placeholder="Buscar por descripción..."
+            className="w-full bg-gray-800 text-slate-200 placeholder-slate-400
+                      pl-10 pr-3 py-2 rounded text-sm
+                      focus:outline-none focus:ring-2 focus:ring-blue-500"
+          />
+        </div>
       </div>
 
       <table className="w-full text-sm">
@@ -26,6 +27,7 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
             <th className="py-2 text-left">Fecha</th>
             <th className="py-2 text-left">Tipo</th>
             <th className="py-2 text-left">Categoría</th>
+            <th className="py-2 text-left">Cuenta</th> {/* 👈 NUEVO */}
             <th className="py-2 text-left">Descripción</th>
             <th className="py-2 text-right">Monto</th>
             <th className="py-2 text-center">Acciones</th>
@@ -35,10 +37,7 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
         <tbody>
           {transactions.length === 0 ? (
             <tr>
-              <td
-                colSpan="6"
-                className="py-6 text-center text-slate-400"
-              >
+              <td colSpan="7" className="py-6 text-center text-slate-400">
                 No hay transacciones registradas
               </td>
             </tr>
@@ -61,6 +60,11 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
                 </td>
 
                 <td className="py-3">{t.category}</td>
+                <td className="py-3 text-slate-300">
+                  {t.type === "INGRESO" && t.to_account}
+                  {t.type === "EGRESO" && t.from_account}
+                  {t.type === "TRANSFERENCIA" && `${t.from_account} → ${t.to_account}`}
+                </td> {/* 👈 NUEVO */}
                 <td className="py-3">{t.description}</td>
 
                 <td className="py-3 text-right font-medium">
@@ -70,21 +74,17 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
                 <td className="py-3 text-center">
                   <div className="flex justify-center gap-2">
                     <button
-                      onClick={() => {
-                        console.log("EDITANDO:", t);
-                        onEdit(t);
-                      }}
+                      onClick={() => onEdit(t)}
                       className="bg-gray-700 hover:bg-gray-600 p-2 rounded transition"
                       title="Editar"
                     >
                       <Pencil className="w-4 h-4 text-slate-200" />
                     </button>
 
-
-
                     <button
                       onClick={() => onDelete(t.id)}
                       className="bg-red-600/20 hover:bg-red-600/40 px-2 py-1 rounded transition"
+                      title="Eliminar"
                     >
                       <Trash2 className="w-4 h-4 text-red-400" />
                     </button>
@@ -94,7 +94,6 @@ function TransactionsTable({ transactions = [], onDelete, onEdit }) {
             ))
           )}
         </tbody>
-
       </table>
     </div>
   );
